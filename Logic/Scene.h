@@ -6,6 +6,7 @@
 
 #include "../Data/Components.h"
 #include "../Data/Entity.h"
+#include "Systems/MovementSystem.h"
 
 class Scene {
  private:
@@ -17,8 +18,7 @@ class Scene {
   };
 
   template <typename T>
-  class ComponentPool : IComponentPool {
-   public:
+  struct ComponentPool : IComponentPool {
     std::unordered_map<uint32_t, std::unique_ptr<T>>
         data;  // хэшмапа entity-component
     void remove(Entity ent) override { data.erase(ent.id); }
@@ -29,26 +29,32 @@ class Scene {
       std::unique_ptr<IComponentPool>>  // хэшмапа component_type-ComponentPool
       component_vault;
   std::vector<Entity> entities;
+  MovementSystem movement_system;
 
   template <typename T>
   ComponentPool<T>*
   getOrCreatePool();  // владение ComponentPool реализуется через unique_ptr,
                       // сырой указатель юзается для наблюдения
+
  public:
   Scene();
   ~Scene();
 
   Entity createEntity();
   void removeEntity(Entity entity);
+  void update(float delta);
 
-  template <typename T, typename... Args>
-  T* addComponent(Entity ent, Args&&... args);
+  template <typename T>
+  T* addComponent(Entity ent);
 
   template <typename T>
   T* getComponent(Entity ent);
 
   template <typename T>
   bool checkComponent(Entity ent);
+
+  template <typename T>
+  const std::unordered_map<uint32_t, std::unique_ptr<T>>& getAllComponents();
 };
 
 template <typename T>
@@ -64,17 +70,17 @@ Scene::ComponentPool<T>* Scene::getOrCreatePool() {
   return static_cast<ComponentPool<T>*>(it->second.get());
 };
 
-template <typename T, typename... Args>
-T* addComponent(Entity ent, Args&&... args) {
+template <typename T>
+T* Scene::addComponent(Entity ent) {
   auto* pool = getOrCreatePool<T>();
-  auto component = std::make_unique<T>(std::forward<Args>(args)...);
+  auto component = std::make_unique<T>();
   T* raw_ptr = component.get();
   pool->data[ent.id] = std::move(component);
   return raw_ptr;
 };
 
 template <typename T>
-T* getComponent(Entity ent) {
+T* Scene::getComponent(Entity ent) {
   auto* pool = getOrCreatePool<T>();
   auto it = pool->data.find(ent.id);
   if (it == pool->data.end()) return nullptr;
@@ -82,9 +88,16 @@ T* getComponent(Entity ent) {
 };
 
 template <typename T>
-bool checkComponent(Entity ent) {
+bool Scene::checkComponent(Entity ent) {
   auto* pool = getOrCreatePool<T>();
   return pool->data.contains(ent.id);
+};
+
+template <typename T>
+const std::unordered_map<uint32_t, std::unique_ptr<T>>&
+Scene::getAllComponents() {
+  auto* pool = getOrCreatePool<T>();
+  return pool->data;
 };
 
 #endif

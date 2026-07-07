@@ -15,3 +15,5 @@ void Scene::removeEntity(Entity ent) {
   }
   std::erase(entities, ent);
 }
+
+void Scene::update(float delta) { movement_system.update(*this, delta); }
