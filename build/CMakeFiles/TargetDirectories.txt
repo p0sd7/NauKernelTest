@@ -1,3 +1,0 @@
-/Users/danil/Documents/nau/test/build/CMakeFiles/upcpp.dir
-/Users/danil/Documents/nau/test/build/CMakeFiles/edit_cache.dir
-/Users/danil/Documents/nau/test/build/CMakeFiles/rebuild_cache.dir
